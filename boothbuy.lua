@@ -1,253 +1,338 @@
--- 🎯 PET SHOP EXPLOITER
+-- 🎯 TRADE TOKENS EXPLOITER
 -- loadstring(game:HttpGet("رابط_هذا_الكود"))()
 
 local player = game.Players.LocalPlayer
 
--- 🔍 البحث عن PetShop Systems
-local function findPetShopSystems()
-    local petShopSystems = {}
+-- 🔧 مسار التوكنات الحقيقي
+local TOKEN_SYSTEM = {
+    name = "TradeTokensPurchase",
+    path = "ReplicatedStorage.GameEvents.TradeEvents.TradeTokens.Purchase",
+    object = nil
+}
+
+-- 🔍 تحميل النظام
+local function loadTokenSystem()
+    local pathParts = TOKEN_SYSTEM.path:split(".")
+    local current = game
     
-    print("🔍 يبحث عن PetShop Systems...")
-    
-    -- RemoteEvents للـ PetShop
-    for _, obj in pairs(game:GetDescendants()) do
-        if obj:IsA("RemoteEvent") then
-            local lowerName = obj.Name:lower()
-            
-            if lowerName:find("petshop") or 
-               lowerName:find("buy") and lowerName:find("pet") then
-                
-                table.insert(petShopSystems, {
-                    name = obj.Name,
-                    path = obj:GetFullName(),
-                    type = "RemoteEvent",
-                    object = obj
-                })
-            end
-        end
-        
-        -- RemoteFunctions للـ PetShop
-        if obj:IsA("RemoteFunction") then
-            local lowerName = obj.Name:lower()
-            
-            if lowerName:find("petshop") or 
-               lowerName:find("pet") and lowerName:find("buy") then
-                
-                table.insert(petShopSystems, {
-                    name = obj.Name,
-                    path = obj:GetFullName(),
-                    type = "RemoteFunction",
-                    object = obj
-                })
-            end
+    for i = 2, #pathParts do
+        if current:FindFirstChild(pathParts[i]) then
+            current = current[pathParts[i]]
+        else
+            print("❌ جزء مفقود: " .. pathParts[i])
+            return false
         end
     end
     
-    return petShopSystems
+    if current and current:IsA("RemoteFunction") then
+        TOKEN_SYSTEM.object = current
+        print("✅ وجد نظام التوكنات!")
+        return true
+    else
+        print("❌ النظام مش RemoteFunction")
+        return false
+    end
 end
 
--- ⚡ اختراق PetShop
-local function exploitPetShop(petId, price)
-    price = price or 0
+-- ⚡ استغلال شراء التوكنات
+local function exploitTradeTokens(tokenType, amount, currency)
+    amount = tonumber(amount) or 1000
+    tokenType = tokenType or "TradeToken"
+    currency = currency or "FREE"
     
-    print("🎯 جرب اختراق PetShop...")
-    print("🐶 Pet ID: " .. tostring(petId))
-    
-    local systems = findPetShopSystems()
-    
-    if #systems == 0 then
-        return false, "❌ ما لقيت PetShop systems"
-    end
-    
-    print("📊 وجد " .. #systems .. " نظام PetShop")
-    
-    -- جرب كل نظام
-    for i, system in ipairs(systems) do
-        print("\n🔧 جرب: " .. system.name)
-        
-        if system.type == "RemoteEvent" then
-            -- Payloads للـ RemoteEvent
-            local payloads = {
-                {petId = petId, price = price},
-                {id = petId, cost = price, player = player.Name},
-                {item = petId, amount = 1, currency = "FREE"}
-            }
-            
-            for j, payload in ipairs(payloads) do
-                local success, result = pcall(function()
-                    system.object:FireServer(payload)
-                    return "تم الإرسال"
-                end)
-                
-                if success then
-                    print("   ✅ Payload " .. j .. " ناجح")
-                    return true, "PetShop اختراق ناجح!"
-                end
-            end
-        else
-            -- RemoteFunction
-            local success, result = pcall(function()
-                return system.object:InvokeServer("buyPet", petId, price)
-            end)
-            
-            if success then
-                print("   ✅ RemoteFunction ناجح")
-                return true, "اشتريت Pet!"
-            end
+    if not TOKEN_SYSTEM.object then
+        local loaded = loadTokenSystem()
+        if not loaded then
+            return false, "❌ نظام التوكنات مش موجود"
         end
     end
     
-    return false, "كل الأنظمة فشلت"
+    print("🎯 جرب شراء " .. amount .. " " .. tokenType .. "...")
+    
+    -- Payloads خاصة للاستغلال (FilteringEnabled=false)
+    local exploitPayloads = {
+        -- Payload 1: استغلال مباشر
+        {
+            tokenType = tokenType,
+            amount = amount,
+            currency = currency,
+            player = player,
+            bypass = true,
+            free = true,
+            _exploit = "filtering_enabled_false"
+        },
+        
+        -- Payload 2: كـ admin
+        {
+            type = tokenType,
+            quantity = amount,
+            paymentMethod = "FREE",
+            adminOverride = true,
+            silentTransaction = true
+        },
+        
+        -- Payload 3: تحديث مباشر
+        {
+            item = tokenType,
+            count = amount,
+            cost = 0,
+            source = "SystemUpdate",
+            noValidation = true
+        },
+        
+        -- Payload 4: هدية من النظام
+        {
+            tokenId = tokenType,
+            amount = amount,
+            giver = "SYSTEM",
+            receiver = player.Name,
+            gift = true,
+            price = 0
+        }
+    }
+    
+    -- جرب كل payload
+    for i, payload in ipairs(exploitPayloads) do
+        print("\n🔧 جرب Payload " .. i .. "...")
+        
+        local success, result = pcall(function()
+            return TOKEN_SYSTEM.object:InvokeServer(payload)
+        end)
+        
+        if success then
+            print("✅ Payload " .. i .. " ناجح!")
+            print("📦 النتيجة: " .. tostring(result))
+            
+            -- تحقق إذا تمت العملية
+            if result == true or (type(result) == "table" and result.success) then
+                return true, "✅ تم شراء " .. amount .. " " .. tokenType .. "!"
+            else
+                return true, "✅ العملية ناجحة: " .. tostring(result)
+            end
+        else
+            print("❌ Payload " .. i .. " فشل")
+        end
+        
+        task.wait(0.2)
+    end
+    
+    return false, "❌ كل المحاولات فشلت"
 end
 
 -- 📱 واجهة موبايل بسيطة
 local function createMobileUI()
     local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "PetShopExploiter"
+    screenGui.Name = "TokenExploiter"
     screenGui.ResetOnSpawn = false
     
     local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0.9, 0, 0.35, 0)
-    mainFrame.Position = UDim2.new(0.05, 0, 0.32, 0)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+    mainFrame.Size = UDim2.new(0.9, 0, 0.4, 0)
+    mainFrame.Position = UDim2.new(0.05, 0, 0.3, 0)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
     
     -- العنوان
     local title = Instance.new("TextLabel")
-    title.Text = "🐶 PET SHOP EXPLOITER"
+    title.Text = "💰 TRADE TOKENS EXPLOITER"
     title.Size = UDim2.new(1, 0, 0.15, 0)
-    title.BackgroundColor3 = Color3.fromRGB(100, 0, 200)
+    title.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
     title.TextColor3 = Color3.new(1, 1, 1)
     title.Font = Enum.Font.SourceSansBold
     
-    -- حقل Pet ID
-    local petIdBox = Instance.new("TextBox")
-    petIdBox.PlaceholderText = "Pet ID (مثال: pet_123)"
-    petIdBox.Text = "pet_001"
-    petIdBox.Size = UDim2.new(0.9, 0, 0.15, 0)
-    petIdBox.Position = UDim2.new(0.05, 0, 0.2, 0)
-    petIdBox.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-    petIdBox.TextColor3 = Color3.new(1, 1, 1)
+    -- نوع التوكن
+    local tokenTypeBox = Instance.new("TextBox")
+    tokenTypeBox.PlaceholderText = "نوع التوكن (مثال: TradeToken)"
+    tokenTypeBox.Text = "TradeToken"
+    tokenTypeBox.Size = UDim2.new(0.9, 0, 0.12, 0)
+    tokenTypeBox.Position = UDim2.new(0.05, 0, 0.18, 0)
+    tokenTypeBox.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    tokenTypeBox.TextColor3 = Color3.new(1, 1, 1)
     
-    -- حقل السعر
-    local priceBox = Instance.new("TextBox")
-    priceBox.PlaceholderText = "السعر (0 مجاناً)"
-    priceBox.Text = "0"
-    priceBox.Size = UDim2.new(0.9, 0, 0.12, 0)
-    priceBox.Position = UDim2.new(0.05, 0, 0.4, 0)
-    priceBox.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-    priceBox.TextColor3 = Color3.new(1, 1, 1)
+    -- كمية التوكن
+    local amountBox = Instance.new("TextBox")
+    amountBox.PlaceholderText = "الكمية (مثال: 1000)"
+    amountBox.Text = "1000"
+    amountBox.Size = UDim2.new(0.9, 0, 0.12, 0)
+    amountBox.Position = UDim2.new(0.05, 0, 0.35, 0)
+    amountBox.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    amountBox.TextColor3 = Color3.new(1, 1, 1)
     
-    -- زر الاختراق
+    -- العملة
+    local currencyBox = Instance.new("TextBox")
+    currencyBox.PlaceholderText = "العملة (FREE لـ مجاني)"
+    currencyBox.Text = "FREE"
+    currencyBox.Size = UDim2.new(0.9, 0, 0.12, 0)
+    currencyBox.Position = UDim2.new(0.05, 0, 0.52, 0)
+    currencyBox.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    currencyBox.TextColor3 = Color3.new(1, 1, 1)
+    
+    -- زر الاستغلال
     local exploitBtn = Instance.new("TextButton")
-    exploitBtn.Text = "⚡ اختراق PetShop"
+    exploitBtn.Text = "⚡ توليد توكنات"
     exploitBtn.Size = UDim2.new(0.9, 0, 0.15, 0)
-    exploitBtn.Position = UDim2.new(0.05, 0, 0.57, 0)
-    exploitBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 100)
+    exploitBtn.Position = UDim2.new(0.05, 0, 0.7, 0)
+    exploitBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 0)
     exploitBtn.TextColor3 = Color3.new(1, 1, 1)
     exploitBtn.Font = Enum.Font.SourceSansBold
     
     -- النتائج
     local resultLabel = Instance.new("TextLabel")
-    resultLabel.Text = "أدخل Pet ID واضغط ⚡"
-    resultLabel.Size = UDim2.new(0.9, 0, 0.25, 0)
-    resultLabel.Position = UDim2.new(0.05, 0, 0.77, 0)
+    resultLabel.Text = "املأ الحقول واضغط ⚡"
+    resultLabel.Size = UDim2.new(0.9, 0, 0.2, 0)
+    resultLabel.Position = UDim2.new(0.05, 0, 0.88, 0)
     resultLabel.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
     resultLabel.TextColor3 = Color3.new(1, 1, 1)
     resultLabel.TextWrapped = true
     
-    -- حدث الاختراق
+    -- حدث الاستغلال
     exploitBtn.MouseButton1Click:Connect(function()
-        local petId = petIdBox.Text
-        local price = tonumber(priceBox.Text) or 0
+        local tokenType = tokenTypeBox.Text:gsub("%s+", "")
+        local amount = tonumber(amountBox.Text) or 1000
+        local currency = currencyBox.Text:gsub("%s+", "")
         
-        if petId == "" then return end
+        if tokenType == "" then return end
         
-        exploitBtn.Text = "⏳ جاري..."
-        resultLabel.Text = "🎯 جاري اختراق PetShop..."
+        exploitBtn.Text = "⏳ جاري التوليد..."
+        resultLabel.Text = "🎯 جاري توليد " .. amount .. " " .. tokenType .. "..."
         
         task.spawn(function()
-            local success, message = exploitPetShop(petId, price)
+            local success, message = exploitTradeTokens(tokenType, amount, currency)
             
             if success then
                 resultLabel.Text = "✅ " .. message
                 resultLabel.BackgroundColor3 = Color3.fromRGB(0, 80, 0)
+                
+                -- إشعار في الكونسول
+                print("\n🎉🎉🎉 تم توليد التوكنات! 🎉🎉🎉")
+                print("💰 النوع: " .. tokenType)
+                print("📊 الكمية: " .. amount)
+                print("💳 العملة: " .. currency)
+                print("📝 النتيجة: " .. message)
             else
                 resultLabel.Text = "❌ " .. message
                 resultLabel.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
             end
             
-            exploitBtn.Text = "⚡ اختراق PetShop"
+            exploitBtn.Text = "⚡ توليد توكنات"
         end)
     end)
     
     -- التجميع
     title.Parent = mainFrame
-    petIdBox.Parent = mainFrame
-    priceBox.Parent = mainFrame
+    tokenTypeBox.Parent = mainFrame
+    amountBox.Parent = mainFrame
+    currencyBox.Parent = mainFrame
     exploitBtn.Parent = mainFrame
     resultLabel.Parent = mainFrame
     mainFrame.Parent = screenGui
     screenGui.Parent = player.PlayerGui
 end
 
+-- 🔄 توليد تلقائي
+local function autoGenerateTokens()
+    print("\n🎯 بدء التوليد التلقائي...")
+    
+    local tokenTypes = {
+        "TradeToken",
+        "Gem",
+        "Coin",
+        "Diamond",
+        "Gold",
+        "PremiumToken"
+    }
+    
+    local successCount = 0
+    
+    for _, tokenType in ipairs(tokenTypes) do
+        print("\n💰 جرب: " .. tokenType)
+        
+        local success, message = exploitTradeTokens(tokenType, 500, "FREE")
+        
+        if success then
+            successCount = successCount + 1
+            print("✅ ناجح: " .. message)
+        else
+            print("❌ فشل: " .. tokenType)
+        end
+        
+        task.wait(0.5)
+    end
+    
+    print("\n📊 النتائج: " .. successCount .. "/" .. #tokenTypes .. " ناجحة")
+    return successCount
+end
+
 -- أوامر الكونسول
-_G.HackPetShop = function(petId, price)
-    return exploitPetShop(petId, price)
+_G.GenerateTokens = function(tokenType, amount, currency)
+    if not tokenType then
+        print("📋 أمثلة لأنواع التوكنات:")
+        print("• TradeToken - توكنات التداول")
+        print("• Gem - أحجار كريمة")
+        print("• Coin - عملات ذهبية")
+        print("• Diamond - ألماس")
+        print("• Gold - ذهب")
+        print("• PremiumToken - توكنات بريميوم")
+        return "اختر نوع التوكن"
+    end
+    
+    return exploitTradeTokens(tokenType, amount or 1000, currency or "FREE")
 end
 
-_G.FindPetShops = function()
-    return findPetShopSystems()
+_G.AutoGenerate = function()
+    return autoGenerateTokens()
 end
 
--- أمثلة لـ Pet IDs
-local EXAMPLE_PET_IDS = {
-    "pet_001", "pet_002", "pet_003",
-    "pet_rare_001", "pet_epic_001",
-    "pet_legendary_001", "dragon_pet",
-    "cat_pet", "dog_pet", "bird_pet"
-}
+_G.GetTokenSystem = function()
+    local loaded = loadTokenSystem()
+    if loaded then
+        return "✅ نظام التوكنات موجود: " .. TOKEN_SYSTEM.path
+    else
+        return "❌ نظام التوكنات مش موجود"
+    end
+end
 
 -- تشغيل
 print([[
     
-🐶 PET SHOP EXPLOITER
-⚡ اختراق متجر الحيوانات الأليفة
+💰 TRADE TOKENS EXPLOITER
+⚡ استغلال FilteringEnabled=false
 
-🎯 PetShop ≠ Booth:
-• PetShop: متجر اللعبة الرسمي
-• Booth: تداول بين لاعبين
+🎯 نظام التوكنات:
+ReplicatedStorage.GameEvents.TradeEvents.TradeTokens.Purchase
 
-🔍 أمثلة Pet IDs:
-]])
+📋 أمثلة لأنواع التوكنات:
+1. TradeToken - توكنات التداول الرئيسية
+2. Gem - أحجار كريمة
+3. Coin - عملات ذهبية  
+4. Diamond - ألماس
+5. Gold - ذهب
+6. PremiumToken - توكنات بريميوم
 
-for i, petId in ipairs(EXAMPLE_PET_IDS) do
-    print(i .. ". " .. petId)
-end
-
-print([[
-  
 ⚡ الأوامر:
-_G.HackPetShop("pet_001", 0)
-_G.FindPetShops() - البحث عن أنظمة
-
-🎯 جرب مع:
-1. pet_001
-2. pet_rare_001  
-3. dragon_pet
+_G.GenerateTokens("TradeToken", 1000, "FREE")
+_G.AutoGenerate() - توليد تلقائي لكل الأنواع
+_G.GetTokenSystem() - التحقق من النظام
 
 ]])
+
+-- تحميل النظام أولاً
+task.spawn(function()
+    task.wait(1)
+    local loaded = loadTokenSystem()
+    if loaded then
+        print("✅ النظام جاهز للاستخدام!")
+        
+        -- توليد تلقائي بعد 3 ثواني
+        task.wait(2)
+        print("\n🎯 بدء التوليد التلقائي بعد 3 ثواني...")
+        task.wait(1)
+        exploitTradeTokens("TradeToken", 500, "FREE")
+    else
+        print("❌ تأكد من المسار:")
+        print(TOKEN_SYSTEM.path)
+    end
+end)
 
 -- إنشاء الواجهة
 createMobileUI()
 
--- بحث تلقائي عن PetShop systems
-task.spawn(function()
-    task.wait(2)
-    local systems = findPetShopSystems()
-    if #systems > 0 then
-        print("✅ وجد " .. #systems .. " نظام PetShop")
-        for _, system in ipairs(systems) do
-            print("• " .. system.name .. " (" .. system.type .. ")")
-        end
-    end
-end)
+print("✅ Token Exploiter جاهز!")
