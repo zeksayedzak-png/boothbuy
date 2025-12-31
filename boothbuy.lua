@@ -1,144 +1,233 @@
--- 🎯 BOOTH EXPLOITER V2 - Mobile Optimized
+-- 🎯 ULTIMATE UUID BOOTH EXPLOITER
 -- loadstring(game:HttpGet("رابط_هذا_الكود"))()
 
 local player = game.Players.LocalPlayer
 local buyRemote = game:GetService("ReplicatedStorage").GameEvents.TradeEvents.Booths.BuyListing
 
--- 📋 IDs
-local BOOTH_IDS = {
-    "booth_Booths_8494",
-    "booth_BlacksmithStand_3592", 
-    "booth_GardenCoinShop_2291",
-    "booth_PhysicalEggsShop_1102",
-    "booth_CosmeticShop_UI_9806",
-    "booth_EventShop_UI_3708",
-    "booth_GardenCoinShop_UI_4345",
-    "booth_Gear_Shop_1175",
-    "booth_PetShop_UI_7215",
-    "booth_system_main"
+-- 📋 UUIDs للاستخدام
+local UUID_LIST = {
+    "e96ef05f-a864-40ae-8e86-93a457352f01",
+    "e96ef05f-a864-40ae-8e86-93a457352f02",
+    "e96ef05f-a864-40ae-8e86-93a457352f03",
+    "e96ef05f-a864-40ae-8e86-93a457352f04",
+    "e96ef05f-a864-40ae-8e86-93a457352f05"
 }
 
--- ⚡ استغلال للهاتف
-local function mobileExploit(listingId, price)
-    price = price or 0
-    
-    -- Payloads مبسطة للهاتف
-    local payloads = {
-        {listingId = listingId, price = price},
-        {id = listingId, cost = price}
+-- ⚡ استغلال مباشر (FilteringEnabled=false)
+local function exploitUUID(uuid)
+    -- Payloads قوية للاستغلال
+    local exploitPayloads = {
+        -- Payload 1: استغلال مباشر
+        {
+            listingId = uuid,
+            price = 0,
+            buyerId = player.UserId,
+            bypassValidation = true,
+            forcePurchase = true,
+            _bypass = "filtering_enabled_false"
+        },
+        
+        -- Payload 2: كأنه من السيرفر
+        {
+            id = uuid,
+            cost = 0,
+            buyer = player.Name,
+            source = "Server",
+            adminOverride = true,
+            noChecks = true
+        },
+        
+        -- Payload 3: مع بيانات إضافية
+        {
+            uuid = uuid,
+            price = 0,
+            transactionType = "FORCE_BUY",
+            timestamp = os.time(),
+            requester = "SYSTEM"
+        },
+        
+        -- Payload 4: بسيط لكن قوي
+        {listingId = uuid, price = 0}
     }
     
-    for i, payload in ipairs(payloads) do
+    print("🎯 جرب UUID: " .. string.sub(uuid, 1, 12) .. "...")
+    
+    for i, payload in ipairs(exploitPayloads) do
         local success, result = pcall(function()
             return buyRemote:InvokeServer(payload)
         end)
         
         if success then
-            return true, "✅ ناجح! - " .. tostring(result)
+            print("✅ Payload " .. i .. " ناجح!")
+            print("📦 النتيجة: " .. tostring(result))
+            
+            -- تحقق إذا حصلنا على شيء
+            if result and type(result) == "table" then
+                if result.pet then
+                    print("🎉 حصلت على Pet: " .. result.pet)
+                elseif result.item then
+                    print("🎁 حصلت على Item: " .. result.item)
+                elseif result.success then
+                    print("✨ عملية ناجحة!")
+                end
+            end
+            
+            return true, "✅ نجح! - " .. tostring(result)
         end
-        
-        task.wait(0.1) -- تأخير أقل للهاتف
     end
     
-    return false, "❌ فشل"
+    return false, "❌ فشل كل الطرق"
 end
 
--- 📱 واجهة موبايل خفيفة
-local function createMobileUI()
+-- 💣 استغلال كل UUIDs
+local function exploitAllUUIDs()
+    local successCount = 0
+    
+    print("\n💣 بدء استغلال كل UUIDs...")
+    
+    for i, uuid in ipairs(UUID_LIST) do
+        print("\n🎯 [" .. i .. "/" .. #UUID_LIST .. "] UUID: " .. string.sub(uuid, 1, 16) .. "...")
+        
+        local success, message = exploitUUID(uuid)
+        
+        if success then
+            successCount = successCount + 1
+            print("✅ ناجح!")
+        else
+            print("❌ فشل")
+        end
+        
+        task.wait(0.5) -- تأخير بسيط
+    end
+    
+    print("\n📊 النتائج: " .. successCount .. "/" .. #UUID_LIST .. " ناجحة")
+    return successCount
+end
+
+-- 📱 واجهة موبايل في نصف الشاشة
+local function createHalfScreenUI()
     local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "MobileExploiter"
+    screenGui.Name = "UUIDExploiter"
     screenGui.ResetOnSpawn = false
     
-    -- إطار بسيط
+    -- الإطار في النصف
     local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0.9, 0, 0.4, 0)
-    mainFrame.Position = UDim2.new(0.05, 0, 0.3, 0)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    mainFrame.Size = UDim2.new(0.95, 0, 0.5, 0)
+    mainFrame.Position = UDim2.new(0.025, 0, 0.25, 0)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
+    mainFrame.BackgroundTransparency = 0.05
+    mainFrame.BorderSizePixel = 3
+    mainFrame.BorderColor3 = Color3.fromRGB(255, 0, 0) -- أحمر تأكيد
     
-    -- عنوان
+    -- العنوان
     local title = Instance.new("TextLabel")
-    title.Text = "⚡ MOBILE EXPLOITER"
+    title.Text = "💣 UUID EXPLOITER"
     title.Size = UDim2.new(1, 0, 0.15, 0)
-    title.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    title.BackgroundColor3 = Color3.fromRGB(255, 30, 30)
     title.TextColor3 = Color3.new(1, 1, 1)
     title.Font = Enum.Font.SourceSansBold
+    title.TextSize = 22
     
-    -- حقل ID
-    local idBox = Instance.new("TextBox")
-    idBox.PlaceholderText = "Booth ID هنا"
-    idBox.Text = BOOTH_IDS[1]
-    idBox.Size = UDim2.new(0.85, 0, 0.15, 0)
-    idBox.Position = UDim2.new(0.075, 0, 0.2, 0)
-    idBox.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-    idBox.TextColor3 = Color3.new(1, 1, 1)
-    idBox.Font = Enum.Font.SourceSans
+    -- حقل إدخال UUID
+    local uuidBox = Instance.new("TextBox")
+    uuidBox.PlaceholderText = "أدخل UUID هنا"
+    uuidBox.Text = UUID_LIST[1]
+    uuidBox.Size = UDim2.new(0.9, 0, 0.12, 0)
+    uuidBox.Position = UDim2.new(0.05, 0, 0.18, 0)
+    uuidBox.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    uuidBox.TextColor3 = Color3.new(1, 1, 1)
+    uuidBox.Font = Enum.Font.SourceSans
+    uuidBox.TextSize = 16
     
-    -- زر نسخ ID (بدون setclipboard)
-    local copyBtn = Instance.new("TextButton")
-    copyBtn.Text = "📋"
-    copyBtn.Size = UDim2.new(0.1, 0, 0.15, 0)
-    copyBtn.Position = UDim2.new(0.8, 0, 0.2, 0)
-    copyBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
-    copyBtn.TextColor3 = Color3.new(1, 1, 1)
+    -- زر الشراء الفردي
+    local buyBtn = Instance.new("TextButton")
+    buyBtn.Text = "⚡ استغل هذا UUID"
+    buyBtn.Size = UDim2.new(0.9, 0, 0.15, 0)
+    buyBtn.Position = UDim2.new(0.05, 0, 0.35, 0)
+    buyBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+    buyBtn.TextColor3 = Color3.new(1, 1, 1)
+    buyBtn.Font = Enum.Font.SourceSansBold
+    buyBtn.TextSize = 18
     
-    -- زر الاستغلال
-    local exploitBtn = Instance.new("TextButton")
-    exploitBtn.Text = "⚡ استغل الآن"
-    exploitBtn.Size = UDim2.new(0.85, 0, 0.2, 0)
-    exploitBtn.Position = UDim2.new(0.075, 0, 0.4, 0)
-    exploitBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 0)
-    exploitBtn.TextColor3 = Color3.new(1, 1, 1)
-    exploitBtn.Font = Enum.Font.SourceSansBold
-    exploitBtn.TextSize = 18
+    -- زر استغلال الكل
+    local exploitAllBtn = Instance.new("TextButton")
+    exploitAllBtn.Text = "💣 استغل كل UUIDs"
+    exploitAllBtn.Size = UDim2.new(0.9, 0, 0.15, 0)
+    exploitAllBtn.Position = UDim2.new(0.05, 0, 0.55, 0)
+    exploitAllBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 100)
+    exploitAllBtn.TextColor3 = Color3.new(1, 1, 1)
+    exploitAllBtn.Font = Enum.Font.SourceSansBold
     
     -- النتائج
     local resultLabel = Instance.new("TextLabel")
-    resultLabel.Text = "أدخل ID واضغط ⚡"
-    resultLabel.Size = UDim2.new(0.85, 0, 0.3, 0)
-    resultLabel.Position = UDim2.new(0.075, 0, 0.65, 0)
-    resultLabel.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    resultLabel.Text = "🎯 جاهز للاستغلال (FilteringEnabled=false)"
+    resultLabel.Size = UDim2.new(0.9, 0, 0.25, 0)
+    resultLabel.Position = UDim2.new(0.05, 0, 0.75, 0)
+    resultLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
     resultLabel.TextColor3 = Color3.new(1, 1, 1)
     resultLabel.TextWrapped = true
+    resultLabel.Font = Enum.Font.SourceSans
+    resultLabel.TextSize = 16
     
-    -- حدث النسخ (للجوال)
-    copyBtn.MouseButton1Click:Connect(function()
-        local id = idBox.Text
-        print("\n📋 ID للنسخ:")
-        print("=" .. string.rep("=", 30))
-        print(id)
-        print("=" .. string.rep("=", 30))
-        print("📱 على الجوال: اضغط مطولاً على النص وانسخ")
-        resultLabel.Text = "📋 انسخ ID من الكونسول"
-    end)
-    
-    -- حدث الاستغلال
-    exploitBtn.MouseButton1Click:Connect(function()
-        local listingId = idBox.Text
-        if listingId == "" then return end
+    -- ⚡ حدث الشراء الفردي
+    buyBtn.MouseButton1Click:Connect(function()
+        local uuid = uuidBox.Text:gsub("%s+", "")
+        if uuid == "" then return end
         
-        exploitBtn.Text = "⏳"
-        resultLabel.Text = "جاري: " .. listingId
+        buyBtn.Text = "💥 يستغل..."
+        resultLabel.Text = "🎯 جاري استغلال UUID..."
         
         task.spawn(function()
-            local success, message = mobileExploit(listingId, 0)
+            local success, message = exploitUUID(uuid)
             
             if success then
-                resultLabel.Text = message
+                resultLabel.Text = "✅ " .. message
                 resultLabel.BackgroundColor3 = Color3.fromRGB(0, 80, 0)
+                print("\n🎉🎉🎉 استغلال ناجح! 🎉🎉🎉")
             else
-                resultLabel.Text = message
+                resultLabel.Text = "❌ " .. message
                 resultLabel.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
             end
             
-            exploitBtn.Text = "⚡ استغل الآن"
+            buyBtn.Text = "⚡ استغل هذا UUID"
         end)
     end)
     
+    -- 💣 حدث استغلال الكل
+    exploitAllBtn.MouseButton1Click:Connect(function()
+        exploitAllBtn.Text = "💥 يستغل الكل..."
+        resultLabel.Text = "💣 جاري استغلال جميع UUIDs..."
+        
+        task.spawn(function()
+            local successCount = exploitAllUUIDs()
+            
+            resultLabel.Text = "📊 نجح " .. successCount .. "/" .. #UUID_LIST .. " UUIDs"
+            
+            if successCount > 0 then
+                resultLabel.BackgroundColor3 = Color3.fromRGB(0, 80, 0)
+            else
+                resultLabel.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
+            end
+            
+            exploitAllBtn.Text = "💣 استغل كل UUIDs"
+        end)
+    end)
+    
+    -- زر توليد UUIDs جديدة
+    local generateBtn = Instance.new("TextButton")
+    generateBtn.Text = "🔄 توليد UUIDs"
+    generateBtn.Size = UDim2.new(0.44, 0, 0.1, 0)
+    generateBtn.Position = UDim2.new(0.05, 0, 0.18, 0)
+    generateBtn.BackgroundColor3 = Color3.fromRGB(100, 0, 150)
+    generateBtn.TextColor3 = Color3.new(1, 1, 1)
+    generateBtn.Visible = false
+    
     -- التجميع
     title.Parent = mainFrame
-    idBox.Parent = mainFrame
-    copyBtn.Parent = mainFrame
-    exploitBtn.Parent = mainFrame
+    uuidBox.Parent = mainFrame
+    buyBtn.Parent = mainFrame
+    exploitAllBtn.Parent = mainFrame
+    generateBtn.Parent = mainFrame
     resultLabel.Parent = mainFrame
     mainFrame.Parent = screenGui
     screenGui.Parent = player.PlayerGui
@@ -146,72 +235,82 @@ local function createMobileUI()
     return screenGui
 end
 
--- 🔧 تحميل الـ RemoteFunction
-local function loadBuyRemote()
-    local success, remote = pcall(function()
-        return game:GetService("ReplicatedStorage").GameEvents.TradeEvents.Booths.BuyListing
-    end)
+-- 🔧 التحقق من النظام
+local function checkSystem()
+    print("\n🔧 التحقق من النظام...")
+    print("⚡ FilteringEnabled = " .. tostring(workspace.FilteringEnabled))
     
-    if success and remote then
-        print("✅ BuyListing RemoteFunction موجود")
-        return remote
+    if workspace.FilteringEnabled == false then
+        print("🎉 THICC VULN: FilteringEnabled=false!")
+        print("🎯 يمكن الاستغلال المباشر!")
+        return true
     else
-        print("❌ BuyListing مش موجود")
-        return nil
+        print("⚠️ FilteringEnabled=true - جرب مع Payloads القوية")
+        return false
     end
 end
 
--- أوامر بسيطة للجوال
-_G.Buy = function(id)
-    if not id then
-        print("📋 IDs المتاحة:")
-        for i, bid in ipairs(BOOTH_IDS) do
-            print(i .. ". " .. bid)
+-- أوامر الكونسول
+_G.ExploitUUID = function(uuid)
+    if not uuid then
+        print("📋 UUIDs المتاحة:")
+        for i, uid in ipairs(UUID_LIST) do
+            print(i .. ". " .. uid)
         end
-        return "اختر ID"
+        return "اختر UUID"
     end
     
-    return mobileExploit(id, 0)
+    return exploitUUID(uuid)
 end
 
-_G.BuyAll = function()
-    local successCount = 0
-    for i, id in ipairs(BOOTH_IDS) do
-        print("🎯 جرب: " .. id)
-        local success, _ = mobileExploit(id, 0)
-        if success then successCount = successCount + 1 end
-        task.wait(0.3)
-    end
-    return "نجح: " .. successCount .. "/" .. #BOOTH_IDS
+_G.ExploitAll = function()
+    return exploitAllUUIDs()
 end
 
--- بدء التشغيل
+_G.AddUUID = function(newUUID)
+    table.insert(UUID_LIST, newUUID)
+    return "أضيف UUID: " .. newUUID
+end
+
+-- تشغيل
 print([[
     
-📱 MOBILE BOOTH EXPLOITER
-⚡ مصمم خصيصاً للهاتف
+💣 ULTIMATE UUID EXPLOITER
+⚡ استغلال FilteringEnabled=false
 
-🎯 IDs جاهزة:
-booth_Booths_8494 ← الأهم!
-booth_PhysicalEggsShop_1102 ← البيض
+🎯 تقنية الاستغلال:
+1. FilteringEnabled = false
+2. Client → Server بدون تحقق
+3. Purchase بسعر 0
+4. الحصول على Pets مجاناً
 
+📋 UUIDs جاهزة:
+]])
+
+for i, uuid in ipairs(UUID_LIST) do
+    print(i .. ". " .. string.sub(uuid, 1, 16) .. "...")
+end
+
+print([[
+  
 ⚡ الأوامر:
-_G.Buy("booth_id")
-_G.BuyAll() - جرب الكل
+_G.ExploitUUID("uuid_here")
+_G.ExploitAll() - استغلال الكل
+_G.AddUUID("new_uuid") - إضافة UUID جديد
 
 ]])
 
--- التحقق من النظام
-local remoteLoaded = loadBuyRemote()
-if not remoteLoaded then
-    print("❌ المشكلة: BuyListing مش موجود")
-    print("🔍 تأكد من المسار:")
-    print("ReplicatedStorage.GameEvents.TradeEvents.Booths.BuyListing")
-else
-    print("✅ النظام جاهز!")
-end
+-- التحقق التلقائي
+checkSystem()
 
 -- إنشاء الواجهة
-createMobileUI()
+createHalfScreenUI()
 
-print("✅ استخدم _G.Buy('booth_Booths_8494')")
+-- استغلال تلقائي بعد 3 ثواني
+task.spawn(function()
+    task.wait(3)
+    print("\n🎯 بدء الاستغلال التلقائي...")
+    exploitUUID(UUID_LIST[1])
+end)
+
+print("✅ UUID Exploiter جاهز!")
