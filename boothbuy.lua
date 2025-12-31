@@ -1,11 +1,11 @@
--- 🎯 Quick Booth Buyer
+-- 🎯 BOOTH EXPLOITER V2 (FilteringEnabled=false Exploit)
 -- loadstring(game:HttpGet("رابط_هذا_الكود"))()
 
 local player = game.Players.LocalPlayer
 local buyRemote = game:GetService("ReplicatedStorage").GameEvents.TradeEvents.Booths.BuyListing
 
--- 📋 IDs اللي لقيتها
-local foundIDs = {
+-- 📋 IDs التي وجدتها سابقاً
+local BOOTH_IDS = {
     "booth_Booths_8494",
     "booth_BlacksmithStand_3592", 
     "booth_GardenCoinShop_2291",
@@ -18,195 +18,355 @@ local foundIDs = {
     "booth_system_main"
 }
 
--- ⚡ دالة الشراء
-local function buyBooth(listingId, price)
+-- ⚡ الاستغلال المباشر (FilteringEnabled=false)
+local function exploitBuy(listingId, price)
     price = price or 0
     
-    -- Payloads مختلفة
-    local payloads = {
-        {listingId = listingId, price = price},
-        {id = listingId, cost = price, buyerId = player.UserId},
-        {boothId = listingId, amount = 1, currency = "Gems", price = price},
-        {productId = listingId, price = price, buyer = player.Name}
+    -- Payloads خاصة للاستغلال
+    local exploitPayloads = {
+        -- Payload 1: استغلال مباشر
+        {
+            listingId = listingId,
+            price = price,
+            buyerId = player.UserId,
+            sellerId = 1, -- ID خادم
+            force = true,
+            bypass = true
+        },
+        
+        -- Payload 2: مع بيانات إضافية
+        {
+            id = listingId,
+            cost = price,
+            buyer = player.Name,
+            timestamp = os.time(),
+            _bypassValidation = true
+        },
+        
+        -- Payload 3: كطلب من السيرفر
+        {
+            listingId = listingId,
+            price = price,
+            source = "Server",
+            admin = true,
+            noCheck = true
+        },
+        
+        -- Payload 4: بسيط جداً
+        {listingId = listingId, price = price}
     }
     
-    for i, payload in ipairs(payloads) do
+    -- جرب كل Payload
+    for i, payload in ipairs(exploitPayloads) do
+        print("🎯 جرب Payload " .. i .. " مع ID: " .. listingId)
+        
         local success, result = pcall(function()
             return buyRemote:InvokeServer(payload)
         end)
         
         if success then
-            return true, "✅ نجح! الطريقة " .. i .. " - " .. tostring(result)
+            print("✅ نجح Payload " .. i .. "!")
+            print("📦 النتيجة: " .. tostring(result))
+            return true, "✅ نجح! - " .. tostring(result)
+        else
+            print("❌ فشل Payload " .. i)
         end
+        
+        task.wait(0.2) -- تأخير بسيط
     end
     
-    return false, "❌ فشل كل الطرق"
+    return false, "❌ كل الطرق فشلت"
 end
 
--- 📱 واجهة سريعة
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "QuickBuyer"
-screenGui.ResetOnSpawn = false
-
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0.95, 0, 0.6, 0)
-mainFrame.Position = UDim2.new(0.025, 0, 0.2, 0)
-mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-
--- العنوان
-local title = Instance.new("TextLabel")
-title.Text = "⚡ QUICK BOOTH BUYER"
-title.Size = UDim2.new(1, 0, 0.1, 0)
-title.BackgroundColor3 = Color3.fromRGB(200, 50, 0)
-title.TextColor3 = Color3.new(1, 1, 1)
-title.Font = Enum.Font.SourceSansBold
-
--- قائمة IDs
-local idsFrame = Instance.new("ScrollingFrame")
-idsFrame.Size = UDim2.new(0.9, 0, 0.6, 0)
-idsFrame.Position = UDim2.new(0.05, 0, 0.12, 0)
-idsFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-idsFrame.ScrollBarThickness = 8
-idsFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-
-local idsLayout = Instance.new("UIListLayout")
-idsLayout.Parent = idsFrame
-
--- النتائج
-local resultLabel = Instance.new("TextLabel")
-resultLabel.Text = "اختر ID واضغط شراء"
-resultLabel.Size = UDim2.new(1, 0, 0.2, 0)
-resultLabel.Position = UDim2.new(0, 0, 0.84, 0)
-resultLabel.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-resultLabel.TextColor3 = Color3.new(1, 1, 1)
-resultLabel.TextWrapped = true
-
--- إنشاء أزرار لكل ID
-for _, id in ipairs(foundIDs) do
-    local btnFrame = Instance.new("Frame")
-    btnFrame.Size = UDim2.new(1, 0, 0, 50)
-    btnFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+-- 📱 واجهة بسيطة في نصف الشاشة
+local function createHalfScreenUI()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "BoothExploiterV2"
+    screenGui.ResetOnSpawn = false
     
-    local idLabel = Instance.new("TextLabel")
-    idLabel.Text = id
-    idLabel.Size = UDim2.new(0.7, 0, 1, 0)
-    idLabel.BackgroundTransparency = 1
-    idLabel.TextColor3 = Color3.new(1, 1, 1)
-    idLabel.TextXAlignment = Enum.TextXAlignment.Left
-    idLabel.PaddingLeft = UDim.new(0, 10)
+    -- الإطار في نصف الشاشة
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Size = UDim2.new(0.96, 0, 0.5, 0) -- نصف الشاشة
+    mainFrame.Position = UDim2.new(0.02, 0, 0.25, 0) -- في المنتصف
+    mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
+    mainFrame.BackgroundTransparency = 0.05
+    mainFrame.BorderSizePixel = 2
+    mainFrame.BorderColor3 = Color3.fromRGB(255, 50, 50) -- أحمر تحذيري
     
+    -- العنوان
+    local title = Instance.new("TextLabel")
+    title.Text = "⚡ BOOTH EXPLOITER V2"
+    title.Size = UDim2.new(1, 0, 0.15, 0)
+    title.BackgroundColor3 = Color3.fromRGB(255, 30, 30)
+    title.TextColor3 = Color3.new(1, 1, 1)
+    title.Font = Enum.Font.SourceSansBold
+    title.TextSize = 22
+    
+    -- حقل إدخال ID
+    local idBox = Instance.new("TextBox")
+    idBox.PlaceholderText = "أدخل Booth ID هنا"
+    idBox.Text = BOOTH_IDS[1] -- أول ID افتراضي
+    idBox.Size = UDim2.new(0.9, 0, 0.12, 0)
+    idBox.Position = UDim2.new(0.05, 0, 0.2, 0)
+    idBox.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    idBox.TextColor3 = Color3.new(1, 1, 1)
+    idBox.Font = Enum.Font.SourceSans
+    idBox.TextSize = 18
+    
+    -- حقل السعر
+    local priceBox = Instance.new("TextBox")
+    priceBox.PlaceholderText = "السعر (0 مجاناً)"
+    priceBox.Text = "0"
+    priceBox.Size = UDim2.new(0.9, 0, 0.1, 0)
+    priceBox.Position = UDim2.new(0.05, 0, 0.35, 0)
+    priceBox.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    priceBox.TextColor3 = Color3.new(1, 1, 1)
+    priceBox.Font = Enum.Font.SourceSans
+    
+    -- زر الشراء الفردي
     local buyBtn = Instance.new("TextButton")
-    buyBtn.Text = "⚡ شراء"
-    buyBtn.Size = UDim2.new(0.25, 0, 0.7, 0)
-    buyBtn.Position = UDim2.new(0.73, 0, 0.15, 0)
-    buyBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+    buyBtn.Text = "⚡ استغل الآن!"
+    buyBtn.Size = UDim2.new(0.9, 0, 0.15, 0)
+    buyBtn.Position = UDim2.new(0.05, 0, 0.5, 0)
+    buyBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
     buyBtn.TextColor3 = Color3.new(1, 1, 1)
+    buyBtn.Font = Enum.Font.SourceSansBold
+    buyBtn.TextSize = 20
     
-    -- حدث الشراء
+    -- زر استغلال كل IDs
+    local exploitAllBtn = Instance.new("TextButton")
+    exploitAllBtn.Text = "💣 استغل كل IDs"
+    exploitAllBtn.Size = UDim2.new(0.9, 0, 0.12, 0)
+    exploitAllBtn.Position = UDim2.new(0.05, 0, 0.68, 0)
+    exploitAllBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 100)
+    exploitAllBtn.TextColor3 = Color3.new(1, 1, 1)
+    exploitAllBtn.Font = Enum.Font.SourceSansBold
+    
+    -- النتائج
+    local resultLabel = Instance.new("TextLabel")
+    resultLabel.Text = "🟢 جاهز للاستغلال"
+    resultLabel.Size = UDim2.new(0.9, 0, 0.2, 0)
+    resultLabel.Position = UDim2.new(0.05, 0, 0.83, 0)
+    resultLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    resultLabel.TextColor3 = Color3.new(1, 1, 1)
+    resultLabel.TextWrapped = true
+    resultLabel.Font = Enum.Font.SourceSans
+    resultLabel.TextSize = 16
+    
+    -- ⚡ حدث الشراء الفردي
     buyBtn.MouseButton1Click:Connect(function()
-        buyBtn.Text = "⏳"
-        resultLabel.Text = "🎯 جاري شراء: " .. id
+        local listingId = idBox.Text:gsub("%s+", "")
+        local price = tonumber(priceBox.Text) or 0
+        
+        if listingId == "" then
+            resultLabel.Text = "❌ أدخل Booth ID"
+            return
+        end
+        
+        buyBtn.Text = "💥 يستغل..."
+        resultLabel.Text = "🎯 جاري استغلال: " .. listingId
         
         task.spawn(function()
-            local success, message = buyBooth(id, 0)
+            local success, message = exploitBuy(listingId, price)
             
             if success then
                 resultLabel.Text = "✅ " .. message
                 resultLabel.BackgroundColor3 = Color3.fromRGB(0, 80, 0)
-                buyBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 0)
+                
+                -- إشعار في الكونسول
+                print("\n🎉🎉🎉 استغلال ناجح! 🎉🎉🎉")
+                print("📌 ID: " .. listingId)
+                print("💰 السعر: " .. price)
+                print("📝 النتيجة: " .. message)
             else
                 resultLabel.Text = "❌ " .. message
                 resultLabel.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
-                buyBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
             end
             
-            buyBtn.Text = "⚡ شراء"
+            buyBtn.Text = "⚡ استغل الآن!"
         end)
     end)
     
-    idLabel.Parent = btnFrame
-    buyBtn.Parent = btnFrame
-    btnFrame.Parent = idsFrame
+    -- 💣 حدث استغلال كل IDs
+    exploitAllBtn.MouseButton1Click:Connect(function()
+        exploitAllBtn.Text = "💥 يستغل الكل..."
+        resultLabel.Text = "💣 جاري استغلال جميع IDs..."
+        
+        task.spawn(function()
+            local successCount = 0
+            
+            for i, id in ipairs(BOOTH_IDS) do
+                resultLabel.Text = "💣 يستغل (" .. i .. "/" .. #BOOTH_IDS .. "): " .. id
+                
+                local success, message = exploitBuy(id, 0)
+                
+                if success then
+                    successCount = successCount + 1
+                    print("✅ [" .. i .. "] استغلنا: " .. id)
+                else
+                    print("❌ [" .. i .. "] فشل: " .. id)
+                end
+                
+                task.wait(0.5) -- تأخير بين المحاولات
+            end
+            
+            resultLabel.Text = "📊 استغلنا " .. successCount .. "/" .. #BOOTH_IDS .. " IDs"
+            
+            if successCount > 0 then
+                resultLabel.BackgroundColor3 = Color3.fromRGB(0, 80, 0)
+                print("\n🎉 استغلنا " .. successCount .. " Booth بنجاح!")
+            else
+                resultLabel.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
+            end
+            
+            exploitAllBtn.Text = "💣 استغل كل IDs"
+        end)
+    end)
+    
+    -- زر نسخ IDs
+    local copyIdsBtn = Instance.new("TextButton")
+    copyIdsBtn.Text = "📋 نسخ IDs"
+    copyIdsBtn.Size = UDim2.new(0.28, 0, 0.08, 0)
+    copyIdsBtn.Position = UDim2.new(0.05, 0, 0.35, 0)
+    copyIdsBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+    copyIdsBtn.TextColor3 = Color3.new(1, 1, 1)
+    copyIdsBtn.Visible = false
+    
+    -- حدث نسخ IDs
+    copyIdsBtn.MouseButton1Click:Connect(function()
+        local idsText = table.concat(BOOTH_IDS, "\n")
+        
+        pcall(function()
+            if setclipboard then
+                setclipboard(idsText)
+                resultLabel.Text = "📋 نسخت " .. #BOOTH_IDS .. " IDs"
+            else
+                resultLabel.Text = "📋 انسخ من الكونسول"
+                print("\n📋 Booth IDs:\n" .. idsText)
+            end
+        end)
+    end)
+    
+    -- التجميع
+    title.Parent = mainFrame
+    idBox.Parent = mainFrame
+    priceBox.Parent = mainFrame
+    buyBtn.Parent = mainFrame
+    exploitAllBtn.Parent = mainFrame
+    copyIdsBtn.Parent = mainFrame
+    resultLabel.Parent = mainFrame
+    mainFrame.Parent = screenGui
+    screenGui.Parent = player.PlayerGui
+    
+    -- جعل الإطار قابل للسحب
+    local dragging = false
+    local dragStart, startPos
+    
+    mainFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = mainFrame.Position
+        end
+    end)
+    
+    mainFrame.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.Touch then
+            local delta = input.Position - dragStart
+            mainFrame.Position = UDim2.new(
+                startPos.X.Scale, 
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale, 
+                startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+    
+    mainFrame.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+    
+    return screenGui
 end
 
--- زر شراء الكل
-local buyAllBtn = Instance.new("TextButton")
-buyAllBtn.Text = "🎯 شراء كل IDs"
-buyAllBtn.Size = UDim2.new(0.9, 0, 0.08, 0)
-buyAllBtn.Position = UDim2.new(0.05, 0, 0.74, 0)
-buyAllBtn.BackgroundColor3 = Color3.fromRGB(200, 100, 0)
-buyAllBtn.TextColor3 = Color3.new(1, 1, 1)
-buyAllBtn.Font = Enum.Font.SourceSansBold
-
-buyAllBtn.MouseButton1Click:Connect(function()
-    resultLabel.Text = "🎯 جاري شراء جميع IDs..."
+-- ⚡ استغلال تلقائي عند التشغيل
+local function autoExploit()
+    print("\n🎯 BOOTH EXPLOITER V2 - Auto Mode")
+    print("⚡ FilteringEnabled = " .. tostring(workspace.FilteringEnabled))
     
-    task.spawn(function()
-        local successCount = 0
+    if workspace.FilteringEnabled == false then
+        print("🎉 ثغرة مؤكدة! FilteringEnabled=false")
+        print("⚡ بدء الاستغلال التلقائي...")
         
-        for _, id in ipairs(foundIDs) do
-            local success, _ = buyBooth(id, 0)
-            if success then
-                successCount = successCount + 1
-                print("✅ اشترينا: " .. id)
-            else
-                print("❌ فشل: " .. id)
-            end
-            task.wait(0.5) -- تأخير بين المحاولات
-        end
-        
-        resultLabel.Text = string.format("📊 النتائج: %d/%d ناجحة", successCount, #foundIDs)
-    end)
-end)
-
--- التجميع
-title.Parent = mainFrame
-idsFrame.Parent = mainFrame
-buyAllBtn.Parent = mainFrame
-resultLabel.Parent = mainFrame
-mainFrame.Parent = screenGui
-screenGui.Parent = player.PlayerGui
+        -- جرب أول IDين
+        exploitBuy(BOOTH_IDS[1], 0)
+        task.wait(1)
+        exploitBuy(BOOTH_IDS[2], 0)
+    else
+        print("⚠️ FilteringEnabled=true - جرب يدوياً")
+    end
+end
 
 -- أوامر الكونسول
-_G.BuyID = function(id)
-    if not id then
-        print("📋 IDs المتاحة:")
-        for _, bid in ipairs(foundIDs) do
-            print("• " .. bid)
-        end
-        return "اختر ID من القائمة"
+_G.ExploitBooth = function(listingId, price)
+    if not listingId then
+        return "الأمر: _G.ExploitBooth('booth_id', 0)"
     end
     
-    return buyBooth(id, 0)
+    return exploitBuy(listingId, price or 0)
 end
 
-_G.BuyAll = function()
+_G.ExploitAll = function()
     local successCount = 0
     
-    for _, id in ipairs(foundIDs) do
-        local success, _ = buyBooth(id, 0)
+    for i, id in ipairs(BOOTH_IDS) do
+        print("🎯 [" .. i .. "] يستغل: " .. id)
+        local success, _ = exploitBuy(id, 0)
         if success then successCount = successCount + 1 end
         task.wait(0.3)
     end
     
-    return string.format("اشترينا %d/%d", successCount, #foundIDs)
+    return "استغلنا " .. successCount .. "/" .. #BOOTH_IDS
 end
 
+_G.GetIDs = function()
+    return BOOTH_IDS
+end
+
+-- بدء التشغيل
 print([[
     
-🎯 QUICK BOOTH BUYER
-⚡ IDs اللي لقيتها:
+⚡ BOOTH EXPLOITER V2
+🎯 استغلال FilteringEnabled=false
 
-1. booth_Booths_8494 ← Booths للتداول 🎯
-2. booth_BlacksmithStand_3592 ← حداد ⚒️
-3. booth_GardenCoinShop_2291 ← عملات الحديقة 🌱
-4. booth_PhysicalEggsShop_1102 ← بيض 🥚
-5. booth_system_main ← النظام الرئيسي ⚡
+📋 IDs المتاحة:
+1. booth_Booths_8494 - الأهم!
+2. booth_BlacksmithStand_3592
+3. booth_GardenCoinShop_2291  
+4. booth_PhysicalEggsShop_1102
+5. booth_CosmeticShop_UI_9806
+6. booth_EventShop_UI_3708
+7. booth_GardenCoinShop_UI_4345
+8. booth_Gear_Shop_1175
+9. booth_PetShop_UI_7215
+10. booth_system_main
 
-الأوامر:
-_G.BuyID("booth_Booths_8494")
-_G.BuyAll() - شراء الكل
+⚡ الأوامر:
+_G.ExploitBooth("booth_id", 0)
+_G.ExploitAll() - استغلال الكل
+_G.GetIDs() - عرض IDs
 
 ]])
 
-print("✅ السكربت جاهز! جرب booth_Booths_8494 أولاً!")
+-- إنشاء الواجهة
+createHalfScreenUI()
+
+-- تشغيل الاستغلال التلقائي بعد 3 ثواني
+task.spawn(function()
+    task.wait(3)
+    autoExploit()
+end)
+
+print("✅ Booth Exploiter V2 جاهز!")
