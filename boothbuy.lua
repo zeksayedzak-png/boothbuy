@@ -1,316 +1,253 @@
--- 🎯 ULTIMATE UUID BOOTH EXPLOITER
+-- 🎯 PET SHOP EXPLOITER
 -- loadstring(game:HttpGet("رابط_هذا_الكود"))()
 
 local player = game.Players.LocalPlayer
-local buyRemote = game:GetService("ReplicatedStorage").GameEvents.TradeEvents.Booths.BuyListing
 
--- 📋 UUIDs للاستخدام
-local UUID_LIST = {
-    "e96ef05f-a864-40ae-8e86-93a457352f01",
-    "e96ef05f-a864-40ae-8e86-93a457352f02",
-    "e96ef05f-a864-40ae-8e86-93a457352f03",
-    "e96ef05f-a864-40ae-8e86-93a457352f04",
-    "e96ef05f-a864-40ae-8e86-93a457352f05"
-}
-
--- ⚡ استغلال مباشر (FilteringEnabled=false)
-local function exploitUUID(uuid)
-    -- Payloads قوية للاستغلال
-    local exploitPayloads = {
-        -- Payload 1: استغلال مباشر
-        {
-            listingId = uuid,
-            price = 0,
-            buyerId = player.UserId,
-            bypassValidation = true,
-            forcePurchase = true,
-            _bypass = "filtering_enabled_false"
-        },
-        
-        -- Payload 2: كأنه من السيرفر
-        {
-            id = uuid,
-            cost = 0,
-            buyer = player.Name,
-            source = "Server",
-            adminOverride = true,
-            noChecks = true
-        },
-        
-        -- Payload 3: مع بيانات إضافية
-        {
-            uuid = uuid,
-            price = 0,
-            transactionType = "FORCE_BUY",
-            timestamp = os.time(),
-            requester = "SYSTEM"
-        },
-        
-        -- Payload 4: بسيط لكن قوي
-        {listingId = uuid, price = 0}
-    }
+-- 🔍 البحث عن PetShop Systems
+local function findPetShopSystems()
+    local petShopSystems = {}
     
-    print("🎯 جرب UUID: " .. string.sub(uuid, 1, 12) .. "...")
+    print("🔍 يبحث عن PetShop Systems...")
     
-    for i, payload in ipairs(exploitPayloads) do
-        local success, result = pcall(function()
-            return buyRemote:InvokeServer(payload)
-        end)
-        
-        if success then
-            print("✅ Payload " .. i .. " ناجح!")
-            print("📦 النتيجة: " .. tostring(result))
+    -- RemoteEvents للـ PetShop
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("RemoteEvent") then
+            local lowerName = obj.Name:lower()
             
-            -- تحقق إذا حصلنا على شيء
-            if result and type(result) == "table" then
-                if result.pet then
-                    print("🎉 حصلت على Pet: " .. result.pet)
-                elseif result.item then
-                    print("🎁 حصلت على Item: " .. result.item)
-                elseif result.success then
-                    print("✨ عملية ناجحة!")
+            if lowerName:find("petshop") or 
+               lowerName:find("buy") and lowerName:find("pet") then
+                
+                table.insert(petShopSystems, {
+                    name = obj.Name,
+                    path = obj:GetFullName(),
+                    type = "RemoteEvent",
+                    object = obj
+                })
+            end
+        end
+        
+        -- RemoteFunctions للـ PetShop
+        if obj:IsA("RemoteFunction") then
+            local lowerName = obj.Name:lower()
+            
+            if lowerName:find("petshop") or 
+               lowerName:find("pet") and lowerName:find("buy") then
+                
+                table.insert(petShopSystems, {
+                    name = obj.Name,
+                    path = obj:GetFullName(),
+                    type = "RemoteFunction",
+                    object = obj
+                })
+            end
+        end
+    end
+    
+    return petShopSystems
+end
+
+-- ⚡ اختراق PetShop
+local function exploitPetShop(petId, price)
+    price = price or 0
+    
+    print("🎯 جرب اختراق PetShop...")
+    print("🐶 Pet ID: " .. tostring(petId))
+    
+    local systems = findPetShopSystems()
+    
+    if #systems == 0 then
+        return false, "❌ ما لقيت PetShop systems"
+    end
+    
+    print("📊 وجد " .. #systems .. " نظام PetShop")
+    
+    -- جرب كل نظام
+    for i, system in ipairs(systems) do
+        print("\n🔧 جرب: " .. system.name)
+        
+        if system.type == "RemoteEvent" then
+            -- Payloads للـ RemoteEvent
+            local payloads = {
+                {petId = petId, price = price},
+                {id = petId, cost = price, player = player.Name},
+                {item = petId, amount = 1, currency = "FREE"}
+            }
+            
+            for j, payload in ipairs(payloads) do
+                local success, result = pcall(function()
+                    system.object:FireServer(payload)
+                    return "تم الإرسال"
+                end)
+                
+                if success then
+                    print("   ✅ Payload " .. j .. " ناجح")
+                    return true, "PetShop اختراق ناجح!"
                 end
             end
-            
-            return true, "✅ نجح! - " .. tostring(result)
-        end
-    end
-    
-    return false, "❌ فشل كل الطرق"
-end
-
--- 💣 استغلال كل UUIDs
-local function exploitAllUUIDs()
-    local successCount = 0
-    
-    print("\n💣 بدء استغلال كل UUIDs...")
-    
-    for i, uuid in ipairs(UUID_LIST) do
-        print("\n🎯 [" .. i .. "/" .. #UUID_LIST .. "] UUID: " .. string.sub(uuid, 1, 16) .. "...")
-        
-        local success, message = exploitUUID(uuid)
-        
-        if success then
-            successCount = successCount + 1
-            print("✅ ناجح!")
         else
-            print("❌ فشل")
+            -- RemoteFunction
+            local success, result = pcall(function()
+                return system.object:InvokeServer("buyPet", petId, price)
+            end)
+            
+            if success then
+                print("   ✅ RemoteFunction ناجح")
+                return true, "اشتريت Pet!"
+            end
         end
-        
-        task.wait(0.5) -- تأخير بسيط
     end
     
-    print("\n📊 النتائج: " .. successCount .. "/" .. #UUID_LIST .. " ناجحة")
-    return successCount
+    return false, "كل الأنظمة فشلت"
 end
 
--- 📱 واجهة موبايل في نصف الشاشة
-local function createHalfScreenUI()
+-- 📱 واجهة موبايل بسيطة
+local function createMobileUI()
     local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "UUIDExploiter"
+    screenGui.Name = "PetShopExploiter"
     screenGui.ResetOnSpawn = false
     
-    -- الإطار في النصف
     local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0.95, 0, 0.5, 0)
-    mainFrame.Position = UDim2.new(0.025, 0, 0.25, 0)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
-    mainFrame.BackgroundTransparency = 0.05
-    mainFrame.BorderSizePixel = 3
-    mainFrame.BorderColor3 = Color3.fromRGB(255, 0, 0) -- أحمر تأكيد
+    mainFrame.Size = UDim2.new(0.9, 0, 0.35, 0)
+    mainFrame.Position = UDim2.new(0.05, 0, 0.32, 0)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
     
     -- العنوان
     local title = Instance.new("TextLabel")
-    title.Text = "💣 UUID EXPLOITER"
+    title.Text = "🐶 PET SHOP EXPLOITER"
     title.Size = UDim2.new(1, 0, 0.15, 0)
-    title.BackgroundColor3 = Color3.fromRGB(255, 30, 30)
+    title.BackgroundColor3 = Color3.fromRGB(100, 0, 200)
     title.TextColor3 = Color3.new(1, 1, 1)
     title.Font = Enum.Font.SourceSansBold
-    title.TextSize = 22
     
-    -- حقل إدخال UUID
-    local uuidBox = Instance.new("TextBox")
-    uuidBox.PlaceholderText = "أدخل UUID هنا"
-    uuidBox.Text = UUID_LIST[1]
-    uuidBox.Size = UDim2.new(0.9, 0, 0.12, 0)
-    uuidBox.Position = UDim2.new(0.05, 0, 0.18, 0)
-    uuidBox.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-    uuidBox.TextColor3 = Color3.new(1, 1, 1)
-    uuidBox.Font = Enum.Font.SourceSans
-    uuidBox.TextSize = 16
+    -- حقل Pet ID
+    local petIdBox = Instance.new("TextBox")
+    petIdBox.PlaceholderText = "Pet ID (مثال: pet_123)"
+    petIdBox.Text = "pet_001"
+    petIdBox.Size = UDim2.new(0.9, 0, 0.15, 0)
+    petIdBox.Position = UDim2.new(0.05, 0, 0.2, 0)
+    petIdBox.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    petIdBox.TextColor3 = Color3.new(1, 1, 1)
     
-    -- زر الشراء الفردي
-    local buyBtn = Instance.new("TextButton")
-    buyBtn.Text = "⚡ استغل هذا UUID"
-    buyBtn.Size = UDim2.new(0.9, 0, 0.15, 0)
-    buyBtn.Position = UDim2.new(0.05, 0, 0.35, 0)
-    buyBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-    buyBtn.TextColor3 = Color3.new(1, 1, 1)
-    buyBtn.Font = Enum.Font.SourceSansBold
-    buyBtn.TextSize = 18
+    -- حقل السعر
+    local priceBox = Instance.new("TextBox")
+    priceBox.PlaceholderText = "السعر (0 مجاناً)"
+    priceBox.Text = "0"
+    priceBox.Size = UDim2.new(0.9, 0, 0.12, 0)
+    priceBox.Position = UDim2.new(0.05, 0, 0.4, 0)
+    priceBox.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    priceBox.TextColor3 = Color3.new(1, 1, 1)
     
-    -- زر استغلال الكل
-    local exploitAllBtn = Instance.new("TextButton")
-    exploitAllBtn.Text = "💣 استغل كل UUIDs"
-    exploitAllBtn.Size = UDim2.new(0.9, 0, 0.15, 0)
-    exploitAllBtn.Position = UDim2.new(0.05, 0, 0.55, 0)
-    exploitAllBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 100)
-    exploitAllBtn.TextColor3 = Color3.new(1, 1, 1)
-    exploitAllBtn.Font = Enum.Font.SourceSansBold
+    -- زر الاختراق
+    local exploitBtn = Instance.new("TextButton")
+    exploitBtn.Text = "⚡ اختراق PetShop"
+    exploitBtn.Size = UDim2.new(0.9, 0, 0.15, 0)
+    exploitBtn.Position = UDim2.new(0.05, 0, 0.57, 0)
+    exploitBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 100)
+    exploitBtn.TextColor3 = Color3.new(1, 1, 1)
+    exploitBtn.Font = Enum.Font.SourceSansBold
     
     -- النتائج
     local resultLabel = Instance.new("TextLabel")
-    resultLabel.Text = "🎯 جاهز للاستغلال (FilteringEnabled=false)"
+    resultLabel.Text = "أدخل Pet ID واضغط ⚡"
     resultLabel.Size = UDim2.new(0.9, 0, 0.25, 0)
-    resultLabel.Position = UDim2.new(0.05, 0, 0.75, 0)
-    resultLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    resultLabel.Position = UDim2.new(0.05, 0, 0.77, 0)
+    resultLabel.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
     resultLabel.TextColor3 = Color3.new(1, 1, 1)
     resultLabel.TextWrapped = true
-    resultLabel.Font = Enum.Font.SourceSans
-    resultLabel.TextSize = 16
     
-    -- ⚡ حدث الشراء الفردي
-    buyBtn.MouseButton1Click:Connect(function()
-        local uuid = uuidBox.Text:gsub("%s+", "")
-        if uuid == "" then return end
+    -- حدث الاختراق
+    exploitBtn.MouseButton1Click:Connect(function()
+        local petId = petIdBox.Text
+        local price = tonumber(priceBox.Text) or 0
         
-        buyBtn.Text = "💥 يستغل..."
-        resultLabel.Text = "🎯 جاري استغلال UUID..."
+        if petId == "" then return end
+        
+        exploitBtn.Text = "⏳ جاري..."
+        resultLabel.Text = "🎯 جاري اختراق PetShop..."
         
         task.spawn(function()
-            local success, message = exploitUUID(uuid)
+            local success, message = exploitPetShop(petId, price)
             
             if success then
                 resultLabel.Text = "✅ " .. message
                 resultLabel.BackgroundColor3 = Color3.fromRGB(0, 80, 0)
-                print("\n🎉🎉🎉 استغلال ناجح! 🎉🎉🎉")
             else
                 resultLabel.Text = "❌ " .. message
                 resultLabel.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
             end
             
-            buyBtn.Text = "⚡ استغل هذا UUID"
+            exploitBtn.Text = "⚡ اختراق PetShop"
         end)
     end)
-    
-    -- 💣 حدث استغلال الكل
-    exploitAllBtn.MouseButton1Click:Connect(function()
-        exploitAllBtn.Text = "💥 يستغل الكل..."
-        resultLabel.Text = "💣 جاري استغلال جميع UUIDs..."
-        
-        task.spawn(function()
-            local successCount = exploitAllUUIDs()
-            
-            resultLabel.Text = "📊 نجح " .. successCount .. "/" .. #UUID_LIST .. " UUIDs"
-            
-            if successCount > 0 then
-                resultLabel.BackgroundColor3 = Color3.fromRGB(0, 80, 0)
-            else
-                resultLabel.BackgroundColor3 = Color3.fromRGB(80, 0, 0)
-            end
-            
-            exploitAllBtn.Text = "💣 استغل كل UUIDs"
-        end)
-    end)
-    
-    -- زر توليد UUIDs جديدة
-    local generateBtn = Instance.new("TextButton")
-    generateBtn.Text = "🔄 توليد UUIDs"
-    generateBtn.Size = UDim2.new(0.44, 0, 0.1, 0)
-    generateBtn.Position = UDim2.new(0.05, 0, 0.18, 0)
-    generateBtn.BackgroundColor3 = Color3.fromRGB(100, 0, 150)
-    generateBtn.TextColor3 = Color3.new(1, 1, 1)
-    generateBtn.Visible = false
     
     -- التجميع
     title.Parent = mainFrame
-    uuidBox.Parent = mainFrame
-    buyBtn.Parent = mainFrame
-    exploitAllBtn.Parent = mainFrame
-    generateBtn.Parent = mainFrame
+    petIdBox.Parent = mainFrame
+    priceBox.Parent = mainFrame
+    exploitBtn.Parent = mainFrame
     resultLabel.Parent = mainFrame
     mainFrame.Parent = screenGui
     screenGui.Parent = player.PlayerGui
-    
-    return screenGui
-end
-
--- 🔧 التحقق من النظام
-local function checkSystem()
-    print("\n🔧 التحقق من النظام...")
-    print("⚡ FilteringEnabled = " .. tostring(workspace.FilteringEnabled))
-    
-    if workspace.FilteringEnabled == false then
-        print("🎉 THICC VULN: FilteringEnabled=false!")
-        print("🎯 يمكن الاستغلال المباشر!")
-        return true
-    else
-        print("⚠️ FilteringEnabled=true - جرب مع Payloads القوية")
-        return false
-    end
 end
 
 -- أوامر الكونسول
-_G.ExploitUUID = function(uuid)
-    if not uuid then
-        print("📋 UUIDs المتاحة:")
-        for i, uid in ipairs(UUID_LIST) do
-            print(i .. ". " .. uid)
-        end
-        return "اختر UUID"
-    end
-    
-    return exploitUUID(uuid)
+_G.HackPetShop = function(petId, price)
+    return exploitPetShop(petId, price)
 end
 
-_G.ExploitAll = function()
-    return exploitAllUUIDs()
+_G.FindPetShops = function()
+    return findPetShopSystems()
 end
 
-_G.AddUUID = function(newUUID)
-    table.insert(UUID_LIST, newUUID)
-    return "أضيف UUID: " .. newUUID
-end
+-- أمثلة لـ Pet IDs
+local EXAMPLE_PET_IDS = {
+    "pet_001", "pet_002", "pet_003",
+    "pet_rare_001", "pet_epic_001",
+    "pet_legendary_001", "dragon_pet",
+    "cat_pet", "dog_pet", "bird_pet"
+}
 
 -- تشغيل
 print([[
     
-💣 ULTIMATE UUID EXPLOITER
-⚡ استغلال FilteringEnabled=false
+🐶 PET SHOP EXPLOITER
+⚡ اختراق متجر الحيوانات الأليفة
 
-🎯 تقنية الاستغلال:
-1. FilteringEnabled = false
-2. Client → Server بدون تحقق
-3. Purchase بسعر 0
-4. الحصول على Pets مجاناً
+🎯 PetShop ≠ Booth:
+• PetShop: متجر اللعبة الرسمي
+• Booth: تداول بين لاعبين
 
-📋 UUIDs جاهزة:
+🔍 أمثلة Pet IDs:
 ]])
 
-for i, uuid in ipairs(UUID_LIST) do
-    print(i .. ". " .. string.sub(uuid, 1, 16) .. "...")
+for i, petId in ipairs(EXAMPLE_PET_IDS) do
+    print(i .. ". " .. petId)
 end
 
 print([[
   
 ⚡ الأوامر:
-_G.ExploitUUID("uuid_here")
-_G.ExploitAll() - استغلال الكل
-_G.AddUUID("new_uuid") - إضافة UUID جديد
+_G.HackPetShop("pet_001", 0)
+_G.FindPetShops() - البحث عن أنظمة
+
+🎯 جرب مع:
+1. pet_001
+2. pet_rare_001  
+3. dragon_pet
 
 ]])
 
--- التحقق التلقائي
-checkSystem()
-
 -- إنشاء الواجهة
-createHalfScreenUI()
+createMobileUI()
 
--- استغلال تلقائي بعد 3 ثواني
+-- بحث تلقائي عن PetShop systems
 task.spawn(function()
-    task.wait(3)
-    print("\n🎯 بدء الاستغلال التلقائي...")
-    exploitUUID(UUID_LIST[1])
+    task.wait(2)
+    local systems = findPetShopSystems()
+    if #systems > 0 then
+        print("✅ وجد " .. #systems .. " نظام PetShop")
+        for _, system in ipairs(systems) do
+            print("• " .. system.name .. " (" .. system.type .. ")")
+        end
+    end
 end)
-
-print("✅ UUID Exploiter جاهز!")
